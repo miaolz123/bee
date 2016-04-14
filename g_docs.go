@@ -31,8 +31,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
+	"github.com/miaolz123/swagger"
 )
 
 var globalDocsTemplate = `package docs
@@ -42,7 +42,7 @@ import (
 	"strings"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/swagger"
+	"github.com/miaolz123/swagger"
 )
 
 const (
@@ -432,19 +432,18 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 			} else if strings.HasPrefix(t, "@Param") {
 				para := swagger.Parameter{}
 				p := getparams(strings.TrimSpace(t[len("@Param "):]))
-				if len(p) < 4 {
-					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 4 params")
+				if len(p) < 5 {
+					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 5 params")
 				}
 				para.Name = p[0]
 				para.ParamType = p[1]
 				pp := strings.Split(p[2], ".")
 				para.DataType = pp[len(pp)-1]
-				if len(p) > 4 {
-					para.Required, _ = strconv.ParseBool(p[3])
-					para.Description = p[4]
-				} else {
-					para.Description = p[3]
+				para.Required, _ = strconv.ParseBool(p[3])
+				if p[4] != "-" {
+					para.Default = p[4]
 				}
+				para.Description = strings.Trim(p[5], `"`)
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
 				rs := swagger.ResponseMessage{}
@@ -513,7 +512,7 @@ func getparams(str string) []string {
 			if !start {
 				continue
 			} else {
-				if j == 3 {
+				if j == 4 {
 					r = append(r, string(s))
 					r = append(r, strings.TrimSpace((str[i+1:])))
 					break
