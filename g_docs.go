@@ -435,6 +435,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				if len(p) < 5 {
 					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 5 params")
 				}
+				para.AllowMultiple = true
 				para.Name = p[0]
 				para.ParamType = p[1]
 				pp := strings.Split(p[2], ".")
