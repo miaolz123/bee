@@ -183,7 +183,8 @@ func generateDocs(curpath string) {
 											}
 										}
 										if v, ok := controllerComments[controllerName]; ok {
-											subapi.Description = v
+											vs := strings.Split(v, " ")
+											subapi.Description = strings.TrimSpace(vs[len(vs)-1])
 										}
 										rootapi.APIs = append(rootapi.APIs, subapi)
 									} else if selname == "NSInclude" {
@@ -393,7 +394,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						if j == 0 || j == 1 {
 							st[j] = string(tmp)
 							tmp = make([]rune, 0)
-							j += 1
+							j++
 							start = false
 							if j == 1 {
 								continue
@@ -435,16 +436,19 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				if len(p) < 5 {
 					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 5 params")
 				}
-				para.AllowMultiple = true
 				para.Name = p[0]
 				para.ParamType = p[1]
 				pp := strings.Split(p[2], ".")
 				para.DataType = pp[len(pp)-1]
+				if len(para.DataType) > 2 && para.DataType[:2] == "[]" {
+					para.AllowMultiple = true
+					para.DataType = strings.TrimLeft(para.DataType, "[]")
+				}
 				para.Required, _ = strconv.ParseBool(p[3])
 				if p[4] != "-" {
 					para.Default = p[4]
 				}
-				para.Description = strings.Trim(p[5], `"`)
+				para.Description = strings.Trim(p[len(p)-1], `"`)
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
 				rs := swagger.ResponseMessage{}
@@ -655,16 +659,14 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
 		}
 		if star, ok := arr.Elt.(*ast.StarExpr); ok {
 			return true, fmt.Sprint(star.X)
-		} else {
-			return true, fmt.Sprint(arr.Elt)
 		}
-	} else {
-		switch t := f.Type.(type) {
-		case *ast.StarExpr:
-			return false, fmt.Sprint(t.X)
-		}
-		return false, fmt.Sprint(f.Type)
+		return true, fmt.Sprint(arr.Elt)
 	}
+	switch t := f.Type.(type) {
+	case *ast.StarExpr:
+		return false, fmt.Sprint(t.X)
+	}
+	return false, fmt.Sprint(f.Type)
 }
 
 func isBasicType(Type string) bool {
